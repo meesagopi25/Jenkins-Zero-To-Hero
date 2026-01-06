@@ -27,6 +27,7 @@ pipeline {
                 script {
                     sh '''
                         mkdir -p ${DOCKER_CONFIG}
+                        # Navigate to the subdirectory to run the docker build
                         cd cicd
                         docker build -t ${DOCKER_IMAGE} .
                     '''
@@ -47,25 +48,22 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
                     sh '''
-                        # Install git
+                        # 1. Install git
                         apk add --no-cache git
 
-                        # Crucial: Navigate to the folder containing your code and .git context
-                        # Based on your screenshot, your files are in the 'cicd' directory
-                        cd cicd
+                        # 2. Mark the ROOT workspace as safe (where the .git folder is)
+                        git config --global --add safe.directory ${WORKSPACE}
 
-                        # Mark the directory as safe for Git
-                        git config --global --add safe.directory ${WORKSPACE}/cicd
-
-                        # Configure Git Identity
+                        # 3. Configure Git Identity
                         git config user.email "meesala.gopi@gmail.com"
                         git config user.name "Gopi Meesala"
 
-                        # Update the image tag in deployment.yml
-                        sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" kind-manifest/deployment.yml
+                        # 4. Update the image tag using the relative path from root
+                        # This avoids 'not in a git directory' errors
+                        sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" cicd/kind-manifest/deployment.yml
 
-                        # Commit and Push changes
-                        git add kind-manifest/deployment.yml
+                        # 5. Add, Commit, and Push from the root context
+                        git add cicd/kind-manifest/deployment.yml
                         git commit -m "Update deployment image to version ${BUILD_NUMBER} [skip ci]"
                         git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
                     '''
