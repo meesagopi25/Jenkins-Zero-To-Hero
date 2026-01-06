@@ -45,8 +45,8 @@ pipeline {
                 GIT_USER_NAME = "meesagopi25"
             }
             steps {
-                // Changing to usernamePassword helps Git authenticate correctly
-                withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
+                // Switching back to 'string' for Secret Text credentials
+                withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
                     sh '''
                         apk add --no-cache git
 
@@ -64,8 +64,8 @@ pipeline {
                         git add cicd/kind-manifest/deployment.yml
                         git commit -m "Update deployment image to version ${BUILD_NUMBER} [skip ci]"
 
-                        # Push using embedded credentials to bypass password prompt
-                        git push https://${GH_USER}:${GH_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
+                        # Push using x-access-token for Secret Text credentials
+                        git push https://x-access-token:${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
                     '''
                 }
             }
