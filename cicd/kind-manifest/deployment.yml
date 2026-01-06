@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-demo-app
+  labels:
+    app: python-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: python-demo
+  template:
+    metadata:
+      labels:
+        app: python-demo
+    spec:
+      containers:
+      - name: python-app
+        # Use the tag you just built in Jenkins
+        image: mgopi1982/python-demo-app:7
+        ports:
+        - containerPort: 5000 # Change this to your app's port
+        imagePullPolicy: IfNotPresent
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-demo-service
+spec:
+  selector:
+    app: python-demo
+  ports:
+    - protocol: TCP
+      port: 80         # Port accessible outside the cluster
+      targetPort: 5000 # Port the app is listening on
+  type: NodePort
