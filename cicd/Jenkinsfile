@@ -28,7 +28,7 @@ pipeline {
         script {
           sh '''
             mkdir -p ${DOCKER_CONFIG}
-            ls -R // This will show you all files in the current workspace
+            pwd
             cd cicd
             docker build -t ${DOCKER_IMAGE} .
           '''
