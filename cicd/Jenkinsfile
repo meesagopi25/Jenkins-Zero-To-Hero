@@ -47,15 +47,21 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
                     sh '''
-                        # Install git as it's missing in the docker:cli image
+                        # Install git
                         apk add --no-cache git
 
-                        # Configure Git
+                        # Crucial: Navigate to the folder containing your code and .git context
+                        # Based on your screenshot, your files are in the 'cicd' directory
+                        cd cicd
+
+                        # Mark the directory as safe for Git
+                        git config --global --add safe.directory ${WORKSPACE}/cicd
+
+                        # Configure Git Identity
                         git config user.email "meesala.gopi@gmail.com"
                         git config user.name "Gopi Meesala"
 
-                        # Update the image tag in the manifest
-                        # Note: Ensure kind-manifest/deployment.yml exists in your repo
+                        # Update the image tag in deployment.yml
                         sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" kind-manifest/deployment.yml
 
                         # Commit and Push changes
