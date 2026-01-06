@@ -1,10 +1,12 @@
 node {
+
+    stage('Checkout') {
+        // REQUIRED when Jenkinsfile is in subfolder
+        checkout scm
+    }
+
     docker.image('mgopi1982/maven-docker:3.9.6')
           .inside('--user root -v /var/run/docker.sock:/var/run/docker.sock') {
-
-        stage('Checkout') {
-            checkout scm
-        }
 
         stage('Build and Test') {
             sh '''
@@ -42,18 +44,23 @@ node {
         stage('Update Deployment File') {
             withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
                 sh '''
-                  cd $WORKSPACE
+                  echo "Workspace = $WORKSPACE"
+                  ls -la $WORKSPACE/.git
 
-                  git config user.email "meesala.gopi@gmail.com"
-                  git config user.name "Gopi Meesala"
+                  # FORCE Git to use correct repo
+                  git -C "$WORKSPACE" config user.email "meesala.gopi@gmail.com"
+                  git -C "$WORKSPACE" config user.name "Gopi Meesala"
 
                   sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" \
+                    $WORKSPACE/java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
+
+                  git -C "$WORKSPACE" add \
                     java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
 
-                  git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-                  git commit -m "Update deployment image to version ${BUILD_NUMBER}" || true
+                  git -C "$WORKSPACE" commit -m "Update deployment image to version ${BUILD_NUMBER}" || true
 
-                  git push https://${GITHUB_TOKEN}@github.com/meesagopi25/Jenkins-Zero-To-Hero.git HEAD:main
+                  git -C "$WORKSPACE" push \
+                    https://${GITHUB_TOKEN}@github.com/meesagopi25/Jenkins-Zero-To-Hero.git HEAD:main
                 '''
             }
         }
