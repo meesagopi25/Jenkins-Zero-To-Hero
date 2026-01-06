@@ -17,7 +17,7 @@ spec:
       containers:
       - name: python-app
         # Use the tag you just built in Jenkins
-        image: mgopi1982/python-demo-app:7
+        image: mgopi1982/python-demo-app:replaceImageTag
         ports:
         - containerPort: 5000 # Change this to your app's port
         imagePullPolicy: IfNotPresent
