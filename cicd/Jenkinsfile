@@ -27,7 +27,6 @@ pipeline {
                 script {
                     sh '''
                         mkdir -p ${DOCKER_CONFIG}
-                        # Navigate to the subdirectory to run the docker build
                         cd cicd
                         docker build -t ${DOCKER_IMAGE} .
                     '''
@@ -46,26 +45,27 @@ pipeline {
                 GIT_USER_NAME = "meesagopi25"
             }
             steps {
-                withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+                // Changing to usernamePassword helps Git authenticate correctly
+                withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
                     sh '''
-                        # 1. Install git
                         apk add --no-cache git
 
-                        # 2. Mark the ROOT workspace as safe (where the .git folder is)
+                        # Mark directory as safe
                         git config --global --add safe.directory ${WORKSPACE}
 
-                        # 3. Configure Git Identity
+                        # Configure Identity
                         git config user.email "meesala.gopi@gmail.com"
                         git config user.name "Gopi Meesala"
 
-                        # 4. Update the image tag using the relative path from root
-                        # This avoids 'not in a git directory' errors
+                        # Update the manifest
                         sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" cicd/kind-manifest/deployment.yml
 
-                        # 5. Add, Commit, and Push from the root context
+                        # Commit changes
                         git add cicd/kind-manifest/deployment.yml
                         git commit -m "Update deployment image to version ${BUILD_NUMBER} [skip ci]"
-                        git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
+
+                        # Push using embedded credentials to bypass password prompt
+                        git push https://${GH_USER}:${GH_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
                     '''
                 }
             }
