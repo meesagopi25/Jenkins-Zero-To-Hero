@@ -7,7 +7,6 @@ pipeline {
   }
 
   options {
-    // Ensures reproducible builds
     skipDefaultCheckout(true)
   }
 
@@ -15,7 +14,6 @@ pipeline {
 
     stage('Checkout') {
       steps {
-        // Explicit and deterministic checkout
         checkout([
           $class: 'GitSCM',
           branches: [[name: '*/main']],
@@ -77,17 +75,20 @@ pipeline {
       steps {
         withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
           sh '''
-            cd java-maven-sonar-argocd-helm-k8s
+            # MUST stay at repo root for Git operations
+            pwd
+            ls -la .git
 
             git config user.email "meesala.gopi@gmail.com"
             git config user.name "Gopi Meesala"
 
             sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" \
-              spring-boot-app-manifests/deployment.yml
+              java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
 
-            git add spring-boot-app-manifests/deployment.yml
+            git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
 
-            git commit -m "Update deployment image to version ${BUILD_NUMBER}" || echo "No changes to commit"
+            git commit -m "Update deployment image to version ${BUILD_NUMBER}" \
+              || echo "No changes to commit"
 
             git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
           '''
